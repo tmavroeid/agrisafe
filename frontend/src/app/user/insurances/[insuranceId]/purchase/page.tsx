@@ -2,11 +2,12 @@
 import DefaultLayout from "@/components/Layouts/DefaultLayout";
 import Breadcrumb from "@/components/Breadcrumbs/Breadcrumb";
 import DatePickerOne from "@/components/FormElements/DatePicker/DatePickerOne";
-import { formatEther, parseEther } from 'viem'
+import { formatEther, parseEther, decodeAbiParameters } from 'viem'
 import { useReadContracts, useWriteContract } from 'wagmi'
 import { abi, address } from '../../../../../../abis/InsuranceData.json'
 import { useEffect, useState } from "react";
 import { Insurance } from "@/types/insurance";
+import useBearStore from "@/app/state";
 
 export default function PurchaseInsurance(props: any) {
   const {
@@ -21,6 +22,9 @@ export default function PurchaseInsurance(props: any) {
   const { data: hash, writeContract, isPending, ...rest } = useWriteContract()
 
   console.log('rest:', rest)
+  const worldIdProof = useBearStore((state: any) => state.worldIdProof);
+
+  console.log('worldIdProof:', worldIdProof)
 
   const {data: insuranceData} = useReadContracts({
     contracts: [
@@ -62,13 +66,13 @@ export default function PurchaseInsurance(props: any) {
       // @ts-ignore
       provider: insuranceData[0].result[4],
       // @ts-ignore
-      name: insuranceData[0].result[5],
+      name: insuranceData[0].result[7],
       // @ts-ignore
-      description: insuranceData[0].result[6],
+      description: insuranceData[0].result[8],
       // @ts-ignore
-      riskNumerator: insuranceData[0].result[7].toString(),
+      riskNumerator: insuranceData[0].result[9].toString(),
       // @ts-ignore
-      riskDenominator: insuranceData[0].result[8].toString(),
+      riskDenominator: insuranceData[0].result[10].toString(),
       // @ts-ignore
       liquidityAmount: formatEther(insuranceData[1].result),
     }
@@ -91,13 +95,21 @@ export default function PurchaseInsurance(props: any) {
   }
 
   const onSubmit = () => {
+    const params = decodeAbiParameters([{ type: 'uint256[8]' }], worldIdProof.proof)[0]
+
+    console.log('params:', params)
+    
     writeContract({
       // @ts-ignore
       address: address,
       abi,
       functionName: 'buy',
       value: parseEther(userPayAmount),
-      args: [insuranceId],
+      args: [
+        insuranceId,
+        worldIdProof.nullifier_hash,
+        decodeAbiParameters([{ type: 'uint256[8]' }], worldIdProof.proof)[0],
+      ],
     })
   }
 

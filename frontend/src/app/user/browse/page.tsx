@@ -86,10 +86,10 @@ export default function Browse() {
         end: end.toDateString(),
         type: insurance.result[3],
         provider: insurance.result[4],
-        name: insurance.result[5],
-        description: insurance.result[6],
-        riskNumerator: insurance.result[7].toString(),
-        riskDenominator: insurance.result[8].toString(),
+        name: insurance.result[7],
+        description: insurance.result[8],
+        riskNumerator: insurance.result[9].toString(),
+        riskDenominator: insurance.result[10].toString(),
         // @ts-ignore
         liquidityAmount: formatEther(liquidities[index].result),
       }

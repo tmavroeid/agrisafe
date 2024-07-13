@@ -2,13 +2,18 @@
 import { IDKitWidget, VerificationLevel } from '@worldcoin/idkit'
 import DefaultLayout from "@/components/Layouts/DefaultLayout";
 import Button from "@/components/Button/rounded"
+import useBearStore from "@/app/state";
+import { useAccount } from 'wagmi'
 
 
 export default function Login() {
+  const setWorldIdProof = useBearStore((state: any) => state.setWorldIdProof);
+  const account = useAccount()
+
   const onSuccess = (proof: any) => {
     console.log('on success:', proof)
 
-    // TODO: Redirect to logged in route
+    setWorldIdProof(proof)
   };
 
   return (
@@ -21,7 +26,7 @@ export default function Login() {
         verification_level={VerificationLevel.Orb}
         onSuccess={onSuccess}
         // address here 
-        // signal={""}
+        signal={account.address}
       >
         {({ open }) => (
           <Button

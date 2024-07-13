@@ -15,7 +15,9 @@ export default function CreateInsurance() {
   const [start, setStart] = useState('')
   const [end, setEnd] = useState('')
   const [desc, setDesc] = useState('')
-  const { data: hash, writeContract, isPending } = useWriteContract()
+  const { data: hash, writeContract, isPending, ...rest } = useWriteContract()
+
+  console.log('rest:', rest)
 
   const onSubmit = () => {
     const startTs = Math.round((new Date(start)).getTime() / 1000)
@@ -34,6 +36,8 @@ export default function CreateInsurance() {
         startTs.toString(),
         endTs.toString(),
         insuranceType,
+        '00000',
+        '11111',
         desc,
         riskNumerator,
         riskDenominator
@@ -117,7 +121,7 @@ export default function CreateInsurance() {
               </div>
 
               <button onClick={onSubmit} className="flex w-full justify-center rounded bg-primary p-3 font-medium text-gray hover:bg-opacity-90">
-                Submit
+                {isPending ? 'Loading' : 'Submit'}
               </button>
             </div>
           </div>
