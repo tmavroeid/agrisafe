@@ -258,10 +258,10 @@ contract InsuranceData is FunctionsClient, ConfirmedOwner {
    *
    */
 
-  function buy(uint256 insuranceid, uint256 nullifierHash, uint256[8] calldata proof) external payable {
+  function buy(uint256 insuranceid, uint256 root uint256 nullifierHash, uint256[8] calldata proof) external payable {
     if (nullifierHashes[nullifierHash]) revert InvalidNullifier();
     worldId.verifyProof(
-      1,
+      root,
       groupId, // set to "1" in the constructor
       abi.encodePacked(msg.sender).hashToField(),
       nullifierHash,
