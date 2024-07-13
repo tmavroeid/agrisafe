@@ -1,6 +1,7 @@
 "use client"
 import { IDKitWidget, VerificationLevel } from '@worldcoin/idkit'
 import DefaultLayout from "@/components/Layouts/DefaultLayout";
+import Button from "@/components/Button/rounded"
 
 
 export default function Login() {
@@ -23,11 +24,10 @@ export default function Login() {
         // signal={""}
       >
         {({ open }) => (
-          <button
+          <Button
             onClick={open}
-          >
-            Verify with World ID
-          </button>
+            title="Verify with World ID"
+          />
         )}
     </IDKitWidget>
   </DefaultLayout>
