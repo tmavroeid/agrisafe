@@ -38,18 +38,19 @@ contract InsuranceData {
   mapping(uint256 => Insurance) public insurances;
   mapping(string => bool) public availableInsurances;
   mapping(uint256 => mapping(address => uint256)) public liquidityperlp;
-  mapping(address => uint) public accountBalance;
   mapping(address => mapping(uint256 => bool)) private clientinsured;
   mapping(uint256 => address[]) private insuranceProviderInsurees;
   mapping(address => mapping(uint256 => uint)) insuredamount;
   mapping(address => uint) private fundedinsurance;
   mapping(uint256 => mapping(address => uint)) insuredpayout;
   uint256 public insuranceId;
-
+  uint256[] private validators;
+  mapping(address => bool) private validatorAlreadyExists;
   event ContractAuthorized(address contractAddress);
   event ContractDeauthorized(address contractAddress);
   event InsuranceBought(address insuree, uint256 insuranceid);
   event InsuranceAdded(uint256 insuranceid);
+  event ValidatorAdded(address validator);
   event InsuranceClaimed(address insuree, uint256 payout);
   /********************************************************************************************/
   /*                                       EVENT DEFINITIONS                                  */
@@ -107,7 +108,9 @@ contract InsuranceData {
     providers.push(_provider);
     return successfulRegistration;
   }
-
+    /**
+     * @dev Register insurance by provising all required fields. The caller should be an insurance provider
+     */
   function registerInsurance(
     string calldata _insuranceName,
     uint256 _start,
@@ -137,17 +140,20 @@ contract InsuranceData {
     insuranceId++;
     return insuranceId;
   }
-
+/**
+ * @dev to register a validator.
+ */
+  function registerValidator() external {
+    require(!validatorAlreadyExists[msg.sender], "Validator is already registered");
+    validators.push(msg.sender);
+    emit ValidatorAdded(msg.sender);
+  }
   function getInsuranceProviders() external view returns (address[] memory) {
     return providers;
   }
 
   function getFundedInsuranceProviders() external view returns (address[] memory) {
     return alreadyFundedInsuranceProviders;
-  }
-
-  function getInsureeFunds(address insuree) external view returns (uint) {
-    return accountBalance[insuree];
   }
 
   /**
