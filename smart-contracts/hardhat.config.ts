@@ -3,7 +3,7 @@ import "@nomicfoundation/hardhat-toolbox";
 import '@openzeppelin/hardhat-upgrades';
 import 'hardhat-deploy';
 import '@typechain/hardhat';
-import { HardhatUserConfig } from 'hardhat/config';
+import 'solidity-docgen';
 import '@nomiclabs/hardhat-solhint';
 import '@nomicfoundation/hardhat-chai-matchers';
 import '@nomicfoundation/hardhat-network-helpers';
