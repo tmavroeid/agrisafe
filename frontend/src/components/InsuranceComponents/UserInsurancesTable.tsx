@@ -13,7 +13,9 @@ const defaultData: UserInsurance[] = [
     to: '30/07/2024',
     id: '12345',
     cost: '100$',
-    amount: '20000$'
+    amount: '20000$',
+    totalValidators: '10',
+    validatorResponses: '6'
   },
   {
     image: "/images/product/product-02.png",
@@ -23,11 +25,13 @@ const defaultData: UserInsurance[] = [
     to: '30/07/2024',
     id: '123456',
     cost: '100$',
-    amount: '20000$'
+    amount: '20000$',
+    totalValidators: '10',
+    validatorResponses: '3'
   }
 ];
 
-const TableTwo = props => {
+const UserInsurancesTable = props => {
   const {
     productData = defaultData
   } = props;
@@ -58,6 +62,9 @@ const TableTwo = props => {
         </div>
         <div className="col-span-1 flex items-center">
           <p className="font-medium">Amount</p>
+        </div>
+        <div className="col-span-1 flex items-center">
+          <p className="font-medium">Validation status</p>
         </div>
         <div className="col-span-1 flex items-center">
           <p className="font-medium">Actions</p>
@@ -99,6 +106,11 @@ const TableTwo = props => {
             <p className="text-sm text-black dark:text-white">{insurance.cost}</p>
           </div>
           <div className="col-span-1 flex items-center">
+            <p className="text-sm text-black dark:text-white">
+              {insurance.validatorResponses}/{insurance.totalValidators}
+            </p>
+          </div>
+          <div className="col-span-1 flex items-center">
             <RoundedButton title="Claim"/>
           </div>
         </div>
@@ -107,4 +119,4 @@ const TableTwo = props => {
   );
 };
 
-export default TableTwo;
+export default UserInsurancesTable;

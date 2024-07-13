@@ -6,5 +6,7 @@ export type UserInsurance = {
   to: string;
   id: string;
   cost: string;
-  amount: string
+  amount: string;
+  totalValidators: string;
+  validatorResponses: string;
 };
