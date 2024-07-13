@@ -95,10 +95,19 @@ export default function PurchaseInsurance(props: any) {
   }
 
   const onSubmit = () => {
-    const params = decodeAbiParameters([{ type: 'uint256[8]' }], worldIdProof.proof)[0]
+    const proof = decodeAbiParameters([{ type: 'uint256[8]' }], worldIdProof.proof)[0]
+    console.log('proof:', proof)
 
-    console.log('params:', params)
-    
+    const root = decodeAbiParameters([{ type: 'uint256' }], worldIdProof.merkle_root)[0]
+
+    console.log('root:', root)
+
+    const nullifier = decodeAbiParameters([{ type: 'uint256' }], worldIdProof.nullifier_hash)[0]
+
+    console.log('nullifier:', nullifier)
+
+    // decodeAbiParameters([{ type: 'uint256' }], worldIdProof.nullifier_hash)[0],
+
     writeContract({
       // @ts-ignore
       address: address,
@@ -107,9 +116,11 @@ export default function PurchaseInsurance(props: any) {
       value: parseEther(userPayAmount),
       args: [
         insuranceId,
-        worldIdProof.nullifier_hash,
+        root,
+        nullifier,
         decodeAbiParameters([{ type: 'uint256[8]' }], worldIdProof.proof)[0],
       ],
+
     })
   }
 
