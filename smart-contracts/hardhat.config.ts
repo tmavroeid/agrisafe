@@ -16,6 +16,7 @@ export const compilerConfig = (version: string) => ({
       enabled: true,
       runs: 5000
     },
+    viaIR: true,
     outputSelection: {
       '*': {
         SavingsContract: ['storageLayout']
