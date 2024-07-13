@@ -1,7 +1,7 @@
 "use client";
 import { Insurance } from "@/types/insurance";
 
-import RoundedButton from "@/components/Button/rounded"
+import LinkButton from "@/components/Button/linkButton"
 
 const Table = (props: any) => {
   const {
@@ -65,11 +65,11 @@ const Table = (props: any) => {
           </div>
           <div className="col-span-1 flex items-center">
             <p className="text-sm text-black dark:text-white">
-              ${insurance.liquidityAmount}
+              {insurance.liquidityAmount} ETH
             </p>
           </div>
           <div className="col-span-1 flex items-center">
-            <RoundedButton title="Purchase" onClick={() => {}}/>
+            <LinkButton title="Purchase" target={`/user/insurances/${insurance.id}/purchase`}/>
           </div>
         </div>
       ))}

@@ -4,6 +4,7 @@ import AvailableInsurances from "@/components/Tables/AvailableInsurancesTable";
 import DefaultLayout from "@/components/Layouts/DefaultLayout";
 import Breadcrumb from "@/components/Breadcrumbs/Breadcrumb";
 import { useReadContract, useReadContracts } from 'wagmi'
+import { formatEther } from 'viem'
 import { address, abi } from '../../../../abis/InsuranceData.json';
 import { Insurance } from "@/types/insurance";
 
@@ -11,7 +12,6 @@ export default function Browse() {
   const [insurancesToRead, setInsurancesToRead] = useState([])
   const [insurancesParsed, setInsurancesParsed] = useState([])
   const [liquiditiesToRead, setLiquiditiesToRead] = useState([])
-  const [insuranceLiquidity, setInsuranceLiquidity] = useState([])
 
   const { data: insurancesNum } = useReadContract({
     // @ts-ignore
@@ -23,7 +23,9 @@ export default function Browse() {
 
   // @ts-ignore
   const { data: insurances } = useReadContracts({contracts: insurancesToRead})
-  const { data: liquidities } = useReadContracts({contracts: insurancesToRead})
+  const { data: liquidities } = useReadContracts({contracts: liquiditiesToRead})
+
+  console.log('liquidities:', liquidities)
 
   useEffect(() => {
     const reads = []
@@ -46,7 +48,28 @@ export default function Browse() {
   }, [insurancesNum])
 
   useEffect(() => {
+    const reads = []
+
+    if(insurancesNum === 0) return;
+  
+    // @ts-ignore
+    for (let i = 0 ; i < insurancesNum ; i++) {
+      reads.push({
+        // @ts-ignore
+        address,
+        abi,
+        functionName: 'insuranceliquidity',
+        args: [i.toString()],
+      })
+    }
+
+    // @ts-ignore
+    setLiquiditiesToRead(reads)
+  }, [insurancesNum])
+
+  useEffect(() => {
     if(!insurances) return
+    if(!liquidities) return
 
     const parsed: Insurance[] = insurances!.map((insurance: any, index: number): Insurance => {
       const startTs = (Number(insurance.result[1].toString()) * 1000)
@@ -55,6 +78,7 @@ export default function Browse() {
       const endTs = (Number(insurance.result[2].toString()) * 1000)
       const end = new Date(endTs)
 
+      // console.log('liquidities:', liquidities[index])
 
       return {
         id: index.toString(),
@@ -66,13 +90,15 @@ export default function Browse() {
         description: insurance.result[6],
         riskNumerator: insurance.result[7].toString(),
         riskDenominator: insurance.result[8].toString(),
-        liquidityAmount: '0'
+        // @ts-ignore
+        liquidityAmount: formatEther(liquidities[index].result),
       }
     })
 
     // @ts-ignore
     setInsurancesParsed(parsed)
-  }, [insurances])
+  }, [insurances, liquidities])
+
 
   return (
     <DefaultLayout>
