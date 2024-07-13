@@ -49,10 +49,8 @@ contract InsuranceData {
   event ContractAuthorized(address contractAddress);
   event ContractDeauthorized(address contractAddress);
   event InsuranceBought(address insuree, uint256 insuranceid);
-  event InsuranceAdded(address provider);
+  event InsuranceAdded(uint256 insuranceid);
   event InsuranceClaimed(address insuree, uint256 payout);
-  uint256 public constant REGISTRATION_FUND = 10 ether;
-  uint256 public constant MIN_FUNDING_AMOUNT = 10 ether;
   /********************************************************************************************/
   /*                                       EVENT DEFINITIONS                                  */
   /********************************************************************************************/
@@ -65,15 +63,6 @@ contract InsuranceData {
     contractOwner = msg.sender;
     insuranceId = 0;
   }
-  /**
-   * @dev Modifier that requires the "operational" boolean variable to be "true"
-   *      This is used on all state changing functions to pause the contract in
-   *      the event there is an issue that needs to be fixed
-   */
-  modifier requireIsOperational() {
-    require(operational, "Contract is currently not operational");
-    _;
-  }
 
   /**
    * @dev Modifier that requires the "ContractOwner" account to be the function caller
@@ -85,10 +74,6 @@ contract InsuranceData {
 
   modifier requireIsCallerInsuranceRegistered(address caller) {
     require(registeredInsuranceProvider[caller] == true, "Caller not registered");
-    _;
-  }
-  modifier requireIsCallerAuthorized() {
-    require(authorizedContracts[msg.sender] == true, "Caller is not contract owner");
     _;
   }
 
@@ -104,21 +89,8 @@ contract InsuranceData {
   function isInsuranceProviderRegistered(address registeredInsuranceProviderAddress) public view returns (bool) {
     return registeredInsuranceProvider[registeredInsuranceProviderAddress];
   }
-
-  /**
-   * @dev Get operating status of contract
-   *
-   * @return A bool that is the current operating status
-   */
-  function isOperational() public view returns (bool) {
-    return operational;
-  }
-
   function numOfInsuranceProviders() public view returns (uint count) {
     return providers.length;
-  }
-  function getCounter() public view returns (uint8) {
-    return counter;
   }
 
   /********************************************************************************************/
@@ -129,9 +101,7 @@ contract InsuranceData {
    *      Can only be called from InsuranceApp contract
    *
    */
-  function registerInsuranceProvider(
-    address _provider
-  ) external requireIsOperational requireIsCallerAuthorized returns (bool successfulRegistration) {
+  function registerInsuranceProvider(address _provider) external returns (bool successfulRegistration) {
     registeredInsuranceProvider[_provider] = true;
     successfulRegistration = true;
     providers.push(_provider);
@@ -146,10 +116,8 @@ contract InsuranceData {
     string calldata _description,
     uint256 _riskNumerator,
     uint256 _riskDenominator
-  ) external payable requireIsOperational requireIsCallerAuthorized returns (uint256) {
-    require(availableInsurances[_insuranceName], "Insurance is already registered");
+  ) external payable returns (uint256) {
     require(msg.value > 0, "The insurance provider should fund the insurance");
-    insuranceId++;
     insurances[insuranceId] = Insurance({
       isRegistered: true,
       start: _start,
@@ -165,7 +133,8 @@ contract InsuranceData {
     insurancelps[insuranceId].push(msg.sender);
     insuranceliquidity[insuranceId] = msg.value;
     liquidityperlp[insuranceId][msg.sender] = msg.value;
-    emit InsuranceAdded(msg.sender);
+    emit InsuranceAdded(insuranceId);
+    insuranceId++;
     return insuranceId;
   }
 
@@ -184,9 +153,7 @@ contract InsuranceData {
   /**
    * @dev liquidity providers can deposit funds in any amount to support any insurance
    */
-  function fundInsurance(
-    uint256 insuranceid
-  ) public payable requireIsOperational requireIsCallerAuthorized returns (uint) {
+  function fundInsurance(uint256 insuranceid) public payable returns (uint) {
     require(
       hasProvidedLiquidity[insuranceid][msg.sender],
       "The liquidity provider has already provisioned liquidity for this insurance"
@@ -201,9 +168,7 @@ contract InsuranceData {
   /**
    * @dev to see how much fund an insurance is supported with
    */
-  function getInsuranceFunds(
-    uint256 insuranceid
-  ) external view requireIsOperational requireIsCallerAuthorized returns (uint256) {
+  function getInsuranceFunds(uint256 insuranceid) external view returns (uint256) {
     return insuranceliquidity[insuranceid];
   }
   /**
@@ -211,7 +176,7 @@ contract InsuranceData {
    *
    */
 
-  function buy(uint256 insuranceid) external payable requireIsOperational requireIsCallerAuthorized {
+  function buy(uint256 insuranceid) external payable {
     require(!clientinsured[msg.sender][insuranceid], "The client has already taken this type of insurance");
     require(msg.value > 0, "The client should send ETH to buy insurance");
     uint256 temppayout = msg.value * insurances[insuranceid].riskDenominator;
