@@ -3,23 +3,9 @@ import { Insurance } from "@/types/insurance";
 
 import RoundedButton from "@/components/Button/rounded"
 
-const defaultData: Insurance[] = [
-  {
-    name: "Apple Watch Series 7",
-    description: "This is the description",
-    from: '01/07/2024',
-    to: '30/07/2024',
-    id: '12345',
-    ratioBase: '100',
-    ratio: '1',
-    liquidityAmount: '200000'
-  },
-  
-];
-
-const Table = props => {
+const Table = (props: any) => {
   const {
-    productData = defaultData
+    data = []
   } = props;
 
   return (
@@ -52,7 +38,7 @@ const Table = props => {
 
       </div>
 
-      {productData.map((insurance: Insurance) => (
+      {data.map((insurance: Insurance) => (
         <div
           className="grid grid-cols-6 border-t border-stroke px-4 py-4.5 dark:border-strokedark sm:grid-cols-8 md:px-6 2xl:px-7.5"
           key={insurance.id}
@@ -64,17 +50,17 @@ const Table = props => {
           </div>
           <div className="col-span-1 flex items-center">
             <p className="text-sm text-black dark:text-white">
-              {insurance.from}
+              {insurance.start}
             </p>
           </div>
           <div className="col-span-1 flex items-center">
             <p className="text-sm text-black dark:text-white">
-              {insurance.to}
+              {insurance.end}
             </p>
           </div>
           <div className="col-span-1 flex items-center">
             <p className="text-sm text-black dark:text-white">
-              {insurance.ratio}/{insurance.ratioBase}
+              {insurance.riskNumerator}/{insurance.riskDenominator}
             </p>
           </div>
           <div className="col-span-1 flex items-center">

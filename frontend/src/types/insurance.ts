@@ -1,10 +1,12 @@
 export type Insurance = {
   name: string;
   description: string;
-  from: string;
-  to: string;
+  start: string;
+  end: string;
+  type: string;
   id: string;
-  ratioBase: string;
-  ratio: string;
+  riskNumerator: string;
+  riskDenominator: string;
   liquidityAmount: string;
+  provider: string;
 };
