@@ -4,8 +4,9 @@ import DefaultLayout from "@/components/Layouts/DefaultLayout";
 import Breadcrumb from "@/components/Breadcrumbs/Breadcrumb";
 import InsuranceTypeSelect from "@/components/InsuranceComponents/InsuranceTypeSelect";
 import DatePickerOne from "@/components/FormElements/DatePicker/DatePickerOne";
-import { useSendTransaction } from 'wagmi'
+import { useWriteContract, useAccount } from 'wagmi'
 import { parseEther } from 'viem'
+import { abi, address} from '../../../../abis/InsuranceData.json'
 
 export default function CreateInsurance() {
   const [insuranceType, setInsuranceType] = useState('')
@@ -14,18 +15,29 @@ export default function CreateInsurance() {
   const [start, setStart] = useState('')
   const [end, setEnd] = useState('')
   const [desc, setDesc] = useState('')
+  const { data: hash, writeContract, isPending } = useWriteContract()
 
   const onSubmit = () => {
     const startTs = Math.round((new Date(start)).getTime() / 1000)
     const endTs = Math.round((new Date(end)).getTime() / 1000)
+    const riskNumerator = riskLevel.split('/')[0]
+    const riskDenominator = riskLevel.split('/')[1]
 
-    console.log({
-      insuranceType,
-      funding: parseEther(funding),
-      riskLevel,
-      startTs,
-      endTs,
-      desc
+    writeContract({
+      // @ts-ignore
+      address: address,
+      abi,
+      functionName: 'registerInsurance',
+      value: parseEther(funding),
+      args: [
+        'InsName',
+        startTs.toString(),
+        endTs.toString(),
+        insuranceType,
+        desc,
+        riskNumerator,
+        riskDenominator
+      ],
     })
   }
 

@@ -85,7 +85,10 @@ const menuGroups = [
         ),
         label: "Insurance provider",
         route: "#",
-        children: [{ label: "Create insurance", route: "/provider/create-insurance" }],
+        children: [
+          { label: "Create insurance", route: "/provider/create-insurance" },
+          { label: "Register", route: "/provider/register" },
+        ],
       },
       {
         icon: (
