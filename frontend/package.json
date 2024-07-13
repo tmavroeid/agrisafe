@@ -9,6 +9,8 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@tanstack/react-query": "^5.51.1",
+    "@web3modal/wagmi": "^5.0.6",
     "@worldcoin/idkit": "^1.2.2",
     "apexcharts": "^3.50.0",
     "flatpickr": "^4.6.13",
@@ -18,7 +20,9 @@
     "npm": "^10.8.2",
     "react": "^18",
     "react-apexcharts": "^1.4.1",
-    "react-dom": "^18"
+    "react-dom": "^18",
+    "viem": "^2.17.3",
+    "wagmi": "^2.10.10"
   },
   "devDependencies": {
     "@types/node": "^20",
