@@ -7,7 +7,7 @@
     "compile": "npx hardhat compile",
     "lint": "solhint \"contracts/*.sol\"",
     "docs": "./node_modules/.bin/hardhat docgen",
-    "lint:fix": "prettier --write --plugin=prettier-plugin-solidity 'contracts/**/*.sol' && eslint --fix \"**/*.ts\"",
+    "lint:fix": "prettier --write --plugin=prettier-plugin-solidity 'contracts/**/*.sol'",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
