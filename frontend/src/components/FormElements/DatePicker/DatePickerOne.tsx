@@ -1,10 +1,17 @@
 import flatpickr from "flatpickr";
 import { useEffect } from "react";
 
-const DatePickerOne = ({title = 'Date picker'}) => {
+const DatePickerOne = (props: any) => {
+  const {
+    title = 'Date picker',
+    onChange = () => {},
+    id = title
+  } = props;
+
   useEffect(() => {
     // Init flatpickr
-    flatpickr(".form-datepicker", {
+    flatpickr(`#${id}`, {
+      onChange,
       mode: "single",
       static: true,
       monthSelectorType: "static",
@@ -23,6 +30,7 @@ const DatePickerOne = ({title = 'Date picker'}) => {
       </label>
       <div className="relative">
         <input
+          id={id}
           className="form-datepicker w-full rounded border-[1.5px] border-stroke bg-transparent px-5 py-3 font-normal outline-none transition focus:border-primary active:border-primary dark:border-form-strokedark dark:bg-form-input dark:focus:border-primary"
           placeholder="mm/dd/yyyy"
           data-class="flatpickr-right"

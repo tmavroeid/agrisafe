@@ -1,13 +1,21 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
-const SelectGroupOne: React.FC = () => {
+const SelectGroupOne = (props: any) => {
+  const {
+    onChange = () => {}
+  } = props;
+
   const [selectedOption, setSelectedOption] = useState<string>("");
   const [isOptionSelected, setIsOptionSelected] = useState<boolean>(false);
 
   const changeTextColor = () => {
     setIsOptionSelected(true);
   };
+
+  useEffect(() => {
+    onChange(selectedOption)
+  }, [selectedOption, onChange])
 
   return (
     <div className="mb-4.5">
@@ -30,13 +38,13 @@ const SelectGroupOne: React.FC = () => {
           <option value="" disabled className="text-body dark:text-bodydark">
             Select insurance type
           </option>
-          <option value="USA" className="text-body dark:text-bodydark">
+          <option value="0" className="text-body dark:text-bodydark">
             Rain
           </option>
-          <option value="UK" className="text-body dark:text-bodydark">
+          <option value="1" className="text-body dark:text-bodydark">
             Heat
           </option>
-          <option value="Canada" className="text-body dark:text-bodydark">
+          <option value="2" className="text-body dark:text-bodydark">
             Extreme weather conditions
           </option>
         </select>
