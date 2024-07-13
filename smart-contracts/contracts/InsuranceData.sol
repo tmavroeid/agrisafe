@@ -1,13 +1,20 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.24;
 
-contract InsuranceData {
+import { FunctionsClient } from "@chainlink/contracts/src/v0.8/functions/v1_0_0/FunctionsClient.sol";
+import { ConfirmedOwner } from "@chainlink/contracts/src/v0.8/shared/access/ConfirmedOwner.sol";
+import { FunctionsRequest } from "@chainlink/contracts/src/v0.8/functions/v1_0_0/libraries/FunctionsRequest.sol";
+
+contract InsuranceData is FunctionsClient, ConfirmedOwner {
   /********************************************************************************************/
   /*                                       DATA VARIABLES                                     */
   /********************************************************************************************/
+  using FunctionsRequest for FunctionsRequest.Request;
+  bytes32 public s_lastRequestId;
+  bytes public s_lastResponse;
+  bytes public s_lastError;
 
   address private contractOwner; // Account used to deploy contract
-  bool private operational = true; // Blocks all state changes throughout the contract if false
   mapping(address => bool) private registeredInsuranceProvider;
   mapping(address => bool) private authorizedContracts;
   address[] public providers;
@@ -36,7 +43,6 @@ contract InsuranceData {
     uint256 riskDenominator;
   }
   mapping(uint256 => Insurance) public insurances;
-  mapping(string => bool) public availableInsurances;
   mapping(uint256 => mapping(address => uint256)) public liquidityperlp;
   mapping(address => mapping(uint256 => bool)) private clientinsured;
   mapping(uint256 => address[]) private insuranceProviderInsurees;
@@ -44,7 +50,8 @@ contract InsuranceData {
   mapping(address => uint) private fundedinsurance;
   mapping(uint256 => mapping(address => uint)) insuredpayout;
   uint256 public insuranceId;
-  uint256[] private validators;
+  address[] private validators;
+  uint256[] public insuranceIds;
   mapping(address => bool) private validatorAlreadyExists;
   event ContractAuthorized(address contractAddress);
   event ContractDeauthorized(address contractAddress);
@@ -52,6 +59,40 @@ contract InsuranceData {
   event InsuranceAdded(uint256 insuranceid);
   event ValidatorAdded(address validator);
   event InsuranceClaimed(address insuree, uint256 payout);
+  // Custom error type
+  error UnexpectedRequestID(bytes32 requestId);
+
+  // Event to log responses
+  event Response(bytes32 indexed requestId, string character, bytes response, bytes err);
+
+  // Router address - Hardcoded for Sepolia
+  // Check to get the router address for your supported network https://docs.chain.link/chainlink-functions/supported-networks
+  address router = 0xb83E47C2bC239B3bf370bc41e1459A34b41238D0;
+
+  // JavaScript source code
+  // Fetch character name from the Star Wars API.
+  // Documentation: https://swapi.info/people
+  string source =
+    "const characterId = args[0];"
+    "const apiResponse = await Functions.makeHttpRequest({"
+    "url: `https://swapi.info/api/people/${characterId}/`"
+    "});"
+    "if (apiResponse.error) {"
+    "throw Error('Request failed');"
+    "}"
+    "const { data } = apiResponse;"
+    "return Functions.encodeString(data.name);";
+
+  //Callback gas limit
+  uint32 gasLimit = 300000;
+
+  // donID - Hardcoded for Sepolia
+  // Check to get the donID for your supported network https://docs.chain.link/chainlink-functions/supported-networks
+  bytes32 donID = 0x66756e2d657468657265756d2d7365706f6c69612d3100000000000000000000;
+
+  // State variable to store the returned character information
+  string public character;
+
   /********************************************************************************************/
   /*                                       EVENT DEFINITIONS                                  */
   /********************************************************************************************/
@@ -60,7 +101,7 @@ contract InsuranceData {
    * @dev Constructor
    *      initialize global variable for insurance ids
    */
-  constructor() {
+  constructor() FunctionsClient(router) ConfirmedOwner(msg.sender) {
     contractOwner = msg.sender;
     insuranceId = 0;
   }
@@ -108,9 +149,9 @@ contract InsuranceData {
     providers.push(_provider);
     return successfulRegistration;
   }
-    /**
-     * @dev Register insurance by provising all required fields. The caller should be an insurance provider
-     */
+  /**
+   * @dev Register insurance by provising all required fields. The caller should be an insurance provider
+   */
   function registerInsurance(
     string calldata _insuranceName,
     uint256 _start,
@@ -132,17 +173,18 @@ contract InsuranceData {
       riskNumerator: _riskNumerator,
       riskDenominator: _riskDenominator
     });
-    availableInsurances[_insuranceName] = true;
     insurancelps[insuranceId].push(msg.sender);
+    insuranceIds.push(insuranceId);
     insuranceliquidity[insuranceId] = msg.value;
     liquidityperlp[insuranceId][msg.sender] = msg.value;
     emit InsuranceAdded(insuranceId);
     insuranceId++;
     return insuranceId;
   }
-/**
- * @dev to register a validator.
- */
+
+  /**
+   * @dev to register a validator.
+   */
   function registerValidator() external {
     require(!validatorAlreadyExists[msg.sender], "Validator is already registered");
     validators.push(msg.sender);
@@ -211,6 +253,29 @@ contract InsuranceData {
     insuredpayout[insuranceid][insuree] = insureepayout;
     emit InsuranceClaimed(insuree, insureepayout);
     return insureepayout;
+  }
+
+  /**
+   *  @dev Claim insurance
+   *
+   */
+  function claimInsurancePayout(
+    uint256 insuranceid,
+    string calldata lat,
+    string calldata lon
+  ) external returns (bool) {}
+
+  function fulfillRequest(bytes32 requestId, bytes memory response, bytes memory err) internal override {
+    if (s_lastRequestId != requestId) {
+      revert UnexpectedRequestID(requestId); // Check if request IDs match
+    }
+    // Update the contract's state variables with the response and any errors
+    s_lastResponse = response;
+    character = string(response);
+    s_lastError = err;
+
+    // Emit an event to log the response
+    emit Response(requestId, character, s_lastResponse, s_lastError);
   }
 
   /**
