@@ -2,16 +2,28 @@
 
 ## InsuranceData
 
+### s_lastRequestId
+
+```solidity
+bytes32 s_lastRequestId
+```
+
+### s_lastResponse
+
+```solidity
+bytes s_lastResponse
+```
+
+### s_lastError
+
+```solidity
+bytes s_lastError
+```
+
 ### providers
 
 ```solidity
 address[] providers
-```
-
-### numFundedInsuranceProviders
-
-```solidity
-uint8 numFundedInsuranceProviders
 ```
 
 ### alreadyFundedInsuranceProviders
@@ -69,6 +81,8 @@ struct Insurance {
   uint256 end;
   enum InsuranceData.TypeOfInsurance typeOfIns;
   address provider;
+  string lat;
+  string lon;
   string name;
   string description;
   uint256 riskNumerator;
@@ -82,22 +96,10 @@ struct Insurance {
 mapping(uint256 => struct InsuranceData.Insurance) insurances
 ```
 
-### availableInsurances
-
-```solidity
-mapping(string => bool) availableInsurances
-```
-
 ### liquidityperlp
 
 ```solidity
 mapping(uint256 => mapping(address => uint256)) liquidityperlp
-```
-
-### accountBalance
-
-```solidity
-mapping(address => uint256) accountBalance
 ```
 
 ### insuredamount
@@ -112,22 +114,16 @@ mapping(address => mapping(uint256 => uint256)) insuredamount
 mapping(uint256 => mapping(address => uint256)) insuredpayout
 ```
 
-### multiAddress
-
-```solidity
-address[] multiAddress
-```
-
-### counter
-
-```solidity
-uint8 counter
-```
-
 ### insuranceId
 
 ```solidity
 uint256 insuranceId
+```
+
+### insuranceIds
+
+```solidity
+uint256[] insuranceIds
 ```
 
 ### ContractAuthorized
@@ -151,7 +147,13 @@ event InsuranceBought(address insuree, uint256 insuranceid)
 ### InsuranceAdded
 
 ```solidity
-event InsuranceAdded(address provider)
+event InsuranceAdded(uint256 insuranceid)
+```
+
+### ValidatorAdded
+
+```solidity
+event ValidatorAdded(address validator)
 ```
 
 ### InsuranceClaimed
@@ -160,36 +162,96 @@ event InsuranceAdded(address provider)
 event InsuranceClaimed(address insuree, uint256 payout)
 ```
 
-### REGISTRATION_FUND
+### UnexpectedRequestID
 
 ```solidity
-uint256 REGISTRATION_FUND
+error UnexpectedRequestID(bytes32 requestId)
 ```
 
-### MIN_FUNDING_AMOUNT
+### Response
 
 ```solidity
-uint256 MIN_FUNDING_AMOUNT
+event Response(bytes32 requestId, string character, bytes response, bytes err)
 ```
+
+### router
+
+```solidity
+address router
+```
+
+### source
+
+```solidity
+string source
+```
+
+### gasLimit
+
+```solidity
+uint32 gasLimit
+```
+
+### donID
+
+```solidity
+bytes32 donID
+```
+
+### character
+
+```solidity
+string character
+```
+
+### InvalidNullifier
+
+```solidity
+error InvalidNullifier()
+```
+
+Thrown when attempting to reuse a nullifier
+
+### worldId
+
+```solidity
+contract IWorldID worldId
+```
+
+_The address of the World ID Router contract that will be used for verifying proofs_
+
+### externalNullifierHash
+
+```solidity
+uint256 externalNullifierHash
+```
+
+_The keccak256 hash of the externalNullifier (unique identifier of the action performed), combination of appId and action_
+
+### groupId
+
+```solidity
+uint256 groupId
+```
+
+_The World ID group ID (1 for Orb-verified)_
+
+### nullifierHashes
+
+```solidity
+mapping(uint256 => bool) nullifierHashes
+```
+
+_Whether a nullifier hash has been used already. Used to guarantee an action is only performed once by a single person_
 
 ### constructor
 
 ```solidity
-constructor() public
+constructor(contract IWorldID _worldId, string _appId, string _action) public
 ```
 
 _Constructor
      initialize global variable for insurance ids_
-
-### requireIsOperational
-
-```solidity
-modifier requireIsOperational()
-```
-
-_Modifier that requires the "operational" boolean variable to be "true"
-     This is used on all state changing functions to pause the contract in
-     the event there is an issue that needs to be fixed_
 
 ### requireContractOwner
 
@@ -205,12 +267,6 @@ _Modifier that requires the "ContractOwner" account to be the function caller_
 modifier requireIsCallerInsuranceRegistered(address caller)
 ```
 
-### requireIsCallerAuthorized
-
-```solidity
-modifier requireIsCallerAuthorized()
-```
-
 ### isNotInsured
 
 ```solidity
@@ -223,41 +279,11 @@ function isNotInsured(uint256 insuranceid) external view returns (bool)
 function isInsuranceProviderRegistered(address registeredInsuranceProviderAddress) public view returns (bool)
 ```
 
-### isOperational
-
-```solidity
-function isOperational() public view returns (bool)
-```
-
-_Get operating status of contract_
-
-#### Return Values
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| [0] | bool | A bool that is the current operating status |
-
 ### numOfInsuranceProviders
 
 ```solidity
 function numOfInsuranceProviders() public view returns (uint256 count)
 ```
-
-### getCounter
-
-```solidity
-function getCounter() public view returns (uint8)
-```
-
-### setOperatingStatus
-
-```solidity
-function setOperatingStatus(bool mode) external
-```
-
-_Sets contract operations on/off
-
-When operational mode is disabled, all write transactions except for this one will fail_
 
 ### registerInsuranceProvider
 
@@ -271,8 +297,18 @@ _Add an insurance to the registration queue
 ### registerInsurance
 
 ```solidity
-function registerInsurance(address _insuranceProvider, string _insuranceName, uint256 _start, uint256 _end, enum InsuranceData.TypeOfInsurance _typeOfIns, string _description, uint256 _riskNumerator, uint256 _riskDenominator) external payable returns (uint256)
+function registerInsurance(string _insuranceName, uint256 _start, uint256 _end, enum InsuranceData.TypeOfInsurance _typeOfIns, string _lat, string _lon, string _description, uint256 _riskNumerator, uint256 _riskDenominator) external payable returns (uint256)
 ```
+
+_Register insurance by provising all required fields. The caller should be an insurance provider_
+
+### registerValidator
+
+```solidity
+function registerValidator() external
+```
+
+_to register a validator._
 
 ### getInsuranceProviders
 
@@ -284,12 +320,6 @@ function getInsuranceProviders() external view returns (address[])
 
 ```solidity
 function getFundedInsuranceProviders() external view returns (address[])
-```
-
-### getInsureeFunds
-
-```solidity
-function getInsureeFunds(address insuree) external view returns (uint256)
 ```
 
 ### fundInsurance
@@ -311,7 +341,7 @@ _to see how much fund an insurance is supported with_
 ### buy
 
 ```solidity
-function buy(uint256 insuranceid) external payable
+function buy(uint256 insuranceid, uint256 nullifierHash, uint256[8] proof) external payable
 ```
 
 _Buy weather insurance._
@@ -323,6 +353,51 @@ function payout(uint256 insuranceid, address insuree) external returns (uint256)
 ```
 
 @dev Transfers eligible payout funds to insuree
+
+### claimInsurancePayout
+
+```solidity
+function claimInsurancePayout(uint256 insuranceid) external returns (bytes32)
+```
+
+@dev Claim insurance
+
+### sendRequest
+
+```solidity
+function sendRequest(uint64 subscriptionId, string[] args) internal returns (bytes32 requestId)
+```
+
+Sends an HTTP request for character information
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| subscriptionId | uint64 | The ID for the Chainlink subscription |
+| args | string[] | The arguments to pass to the HTTP request |
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| requestId | bytes32 | The ID of the request |
+
+### fulfillRequest
+
+```solidity
+function fulfillRequest(bytes32 requestId, bytes response, bytes err) internal
+```
+
+Callback function for fulfilling a request
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| requestId | bytes32 | The ID of the request to fulfill |
+| response | bytes | The HTTP response data |
+| err | bytes | Any errors from the Functions request |
 
 ### receive
 
@@ -337,4 +412,50 @@ _Fallback functions when retrieving ether._
 ```solidity
 fallback() external payable
 ```
+
+## ByteHasher
+
+### hashToField
+
+```solidity
+function hashToField(bytes value) internal pure returns (uint256)
+```
+
+_Creates a keccak256 hash of a bytestring.
+`>> 8` makes sure that the result is included in our field_
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| value | bytes | The bytestring to hash |
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| [0] | uint256 | The hash of the specified value |
+
+## IWorldID
+
+### verifyProof
+
+```solidity
+function verifyProof(uint256 root, uint256 groupId, uint256 signalHash, uint256 nullifierHash, uint256 externalNullifierHash, uint256[8] proof) external view
+```
+
+Reverts if the zero-knowledge proof is invalid.
+
+_Note that a double-signaling check is not included here, and should be carried by the caller._
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| root | uint256 | The of the Merkle tree |
+| groupId | uint256 | The id of the Semaphore group |
+| signalHash | uint256 | A keccak256 hash of the Semaphore signal |
+| nullifierHash | uint256 | The nullifier hash |
+| externalNullifierHash | uint256 | A keccak256 hash of the external nullifier |
+| proof | uint256[8] | The zero-knowledge proof |
 

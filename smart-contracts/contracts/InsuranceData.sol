@@ -44,14 +44,25 @@ contract InsuranceData is FunctionsClient, ConfirmedOwner {
     uint256 riskNumerator;
     uint256 riskDenominator;
   }
+  struct Validator {
+    address addr;
+    string url;
+  }
+  struct ValidatorResult {
+    address validator;
+    string jobid;
+    bool result;
+  }
   mapping(uint256 => Insurance) public insurances;
   mapping(uint256 => mapping(address => uint256)) public liquidityperlp;
   mapping(address => mapping(uint256 => bool)) private clientinsured;
   mapping(uint256 => address[]) private insuranceProviderInsurees;
   mapping(address => mapping(uint256 => uint)) insuredamount;
   mapping(uint256 => mapping(address => uint)) insuredpayout;
+  mapping(uint256 => bytes32[]) requestsperclaim;
+  mapping(uint256 => ValidatorResult[]) resultsperclaim;
   uint256 public insuranceId;
-  address[] private validators;
+  Validator[] private validators;
   uint256[] public insuranceIds;
   mapping(address => bool) private validatorAlreadyExists;
   event ContractAuthorized(address contractAddress);
@@ -64,7 +75,8 @@ contract InsuranceData is FunctionsClient, ConfirmedOwner {
   error UnexpectedRequestID(bytes32 requestId);
 
   // Event to log responses
-  event Response(bytes32 indexed requestId, string character, bytes response, bytes err);
+  // uint256 insuranceid, address insuree, address validator,
+  event Response(bytes32 indexed requestId, bytes response, bytes err);
 
   // Router address - Hardcoded for Sepolia
   // Check to get the router address for your supported network https://docs.chain.link/chainlink-functions/supported-networks
@@ -80,14 +92,15 @@ contract InsuranceData is FunctionsClient, ConfirmedOwner {
     "const lon = args[3];"
     "const afterTs = args[4];"
     "const beforeTs = args[5];"
+    "const validatorURL = args[6];"
     "const apiResponse = await Functions.makeHttpRequest({"
-    "url: `https://swapi.info/api/insurance/${insuranceId}?type=${insuranceType}&lat=${lat}&lon=${lon}&after=${afterTs}&before=${beforeTs}`"
+    "url: `${validatorURL}/insurance/${insuranceId}?type=${insuranceType}&lat=${lat}&lon=${lon}&after=${afterTs}&before=${beforeTs}`"
     "});"
     "if (apiResponse.error) {"
     "throw Error('Request failed');"
     "}"
     "const { data } = apiResponse;"
-    "return Functions.encodeString(data.result+data.job_id);";
+    "return Functions.encodeString(data.result+data.job_id+data.address+data.insurance_id);";
 
   //Callback gas limit
   uint32 gasLimit = 300000;
@@ -96,8 +109,6 @@ contract InsuranceData is FunctionsClient, ConfirmedOwner {
   // Check to get the donID for your supported network https://docs.chain.link/chainlink-functions/supported-networks
   bytes32 donID = 0x66756e2d657468657265756d2d7365706f6c69612d3100000000000000000000;
 
-  // State variable to store the returned character information
-  string public character;
   /// @dev This allows us to use our hashToField function on bytes
   using ByteHasher for bytes;
 
@@ -164,10 +175,6 @@ contract InsuranceData is FunctionsClient, ConfirmedOwner {
   function numOfInsuranceProviders() public view returns (uint count) {
     return providers.length;
   }
-
-  /********************************************************************************************/
-  /*                                     SMART CONTRACT FUNCTIONS                             */
-  /********************************************************************************************/
   /**
    * @dev Add an insurance to the registration queue
    *      Can only be called from InsuranceApp contract
@@ -219,9 +226,9 @@ contract InsuranceData is FunctionsClient, ConfirmedOwner {
   /**
    * @dev to register a validator.
    */
-  function registerValidator() external {
+  function registerValidator(string calldata _url) external {
     require(!validatorAlreadyExists[msg.sender], "Validator is already registered");
-    validators.push(msg.sender);
+    validators.push(Validator({ addr: msg.sender, url: _url }));
     emit ValidatorAdded(msg.sender);
   }
   function getInsuranceProviders() external view returns (address[] memory) {
@@ -258,7 +265,7 @@ contract InsuranceData is FunctionsClient, ConfirmedOwner {
    *
    */
 
-  function buy(uint256 insuranceid, uint256 root uint256 nullifierHash, uint256[8] calldata proof) external payable {
+  function buy(uint256 insuranceid, uint256 root, uint256 nullifierHash, uint256[8] calldata proof) external payable {
     if (nullifierHashes[nullifierHash]) revert InvalidNullifier();
     worldId.verifyProof(
       root,
@@ -273,7 +280,7 @@ contract InsuranceData is FunctionsClient, ConfirmedOwner {
     require(msg.value > 0, "The client should send ETH to buy insurance");
     uint256 temppayout = msg.value * insurances[insuranceid].riskDenominator;
     require(temppayout < insuranceliquidity[insuranceid], "You should buy with less ETH");
-    require(insuranceliquidity[insuranceid]>0, "Liquidity does not exist for this insurance");
+    require(insuranceliquidity[insuranceid] > 0, "Liquidity does not exist for this insurance");
     claimablePayout[msg.sender][insuranceid] = temppayout;
     clientinsured[msg.sender][insuranceid] = true;
     insuranceProviderInsurees[insuranceid].push(msg.sender);
@@ -316,11 +323,12 @@ contract InsuranceData is FunctionsClient, ConfirmedOwner {
     args[5] = Strings.toString(instance.end);
     FunctionsRequest.Request memory req;
     req.initializeRequestForInlineJavaScript(source); // Initialize the request with JS code
-    if (args.length > 0) req.setArgs(args); // Set the arguments for the request
-
-    // Send the request and store the request ID
-    s_lastRequestId = _sendRequest(req.encodeCBOR(), uint64(3217), gasLimit, donID);
-
+    for (uint256 i = 0; i < validators.length; i++) {
+      args[6] = validators[i].url;
+      req.setArgs(args);
+      s_lastRequestId = _sendRequest(req.encodeCBOR(), uint64(3217), gasLimit, donID);
+      requestsperclaim[insuranceid].push(s_lastRequestId);
+    }
     return s_lastRequestId;
   }
   /**
@@ -329,9 +337,7 @@ contract InsuranceData is FunctionsClient, ConfirmedOwner {
    * @param args The arguments to pass to the HTTP request
    * @return requestId The ID of the request
    */
-  function sendRequest(uint64 subscriptionId, string[] calldata args) internal returns (bytes32 requestId) {
-    
-  }
+  function sendRequest(uint64 subscriptionId, string[] calldata args) internal returns (bytes32 requestId) {}
 
   /**
    * @notice Callback function for fulfilling a request
@@ -345,11 +351,10 @@ contract InsuranceData is FunctionsClient, ConfirmedOwner {
     }
     // Update the contract's state variables with the response and any errors
     s_lastResponse = response;
-    character = string(response);
     s_lastError = err;
 
     // Emit an event to log the response
-    emit Response(requestId, character, s_lastResponse, s_lastError);
+    emit Response(requestId, s_lastResponse, s_lastError);
   }
 
   /**
