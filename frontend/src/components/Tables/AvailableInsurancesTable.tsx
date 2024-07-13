@@ -1,5 +1,4 @@
-import Link from "next/link";
-import Image from "next/image";
+"use client";
 import { Insurance } from "@/types/insurance";
 
 import RoundedButton from "@/components/Button/rounded"
@@ -84,7 +83,7 @@ const Table = props => {
             </p>
           </div>
           <div className="col-span-1 flex items-center">
-            <RoundedButton title="Purchase"/>
+            <RoundedButton title="Purchase" onClick={() => {}}/>
           </div>
         </div>
       ))}
