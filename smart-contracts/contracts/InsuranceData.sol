@@ -4,6 +4,9 @@ pragma solidity ^0.8.24;
 import { FunctionsClient } from "@chainlink/contracts/src/v0.8/functions/v1_0_0/FunctionsClient.sol";
 import { ConfirmedOwner } from "@chainlink/contracts/src/v0.8/shared/access/ConfirmedOwner.sol";
 import { FunctionsRequest } from "@chainlink/contracts/src/v0.8/functions/v1_0_0/libraries/FunctionsRequest.sol";
+import { ByteHasher } from "./helpers/ByteHasher.sol";
+import { IWorldID } from "./interfaces/IWorldID.sol";
+import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 
 contract InsuranceData is FunctionsClient, ConfirmedOwner {
   /********************************************************************************************/
@@ -16,10 +19,7 @@ contract InsuranceData is FunctionsClient, ConfirmedOwner {
 
   address private contractOwner; // Account used to deploy contract
   mapping(address => bool) private registeredInsuranceProvider;
-  mapping(address => bool) private authorizedContracts;
   address[] public providers;
-
-  uint8 public numFundedInsuranceProviders;
   address[] public alreadyFundedInsuranceProviders;
   mapping(uint256 => uint256) public numliquidityproviders;
   mapping(uint256 => address[]) public insurancelps;
@@ -37,6 +37,8 @@ contract InsuranceData is FunctionsClient, ConfirmedOwner {
     uint256 end;
     TypeOfInsurance typeOfIns;
     address provider;
+    string lat;
+    string lon;
     string name;
     string description;
     uint256 riskNumerator;
@@ -47,7 +49,6 @@ contract InsuranceData is FunctionsClient, ConfirmedOwner {
   mapping(address => mapping(uint256 => bool)) private clientinsured;
   mapping(uint256 => address[]) private insuranceProviderInsurees;
   mapping(address => mapping(uint256 => uint)) insuredamount;
-  mapping(address => uint) private fundedinsurance;
   mapping(uint256 => mapping(address => uint)) insuredpayout;
   uint256 public insuranceId;
   address[] private validators;
@@ -73,15 +74,20 @@ contract InsuranceData is FunctionsClient, ConfirmedOwner {
   // Fetch character name from the Star Wars API.
   // Documentation: https://swapi.info/people
   string source =
-    "const characterId = args[0];"
+    "const insuranceId = args[0];"
+    "const insuranceType = args[1];"
+    "const lat = args[2];"
+    "const lon = args[3];"
+    "const afterTs = args[4];"
+    "const beforeTs = args[5];"
     "const apiResponse = await Functions.makeHttpRequest({"
-    "url: `https://swapi.info/api/people/${characterId}/`"
+    "url: `https://swapi.info/api/insurance/${insuranceId}?type=${insuranceType}&lat=${lat}&lon=${lon}&after=${afterTs}&before=${beforeTs}`"
     "});"
     "if (apiResponse.error) {"
     "throw Error('Request failed');"
     "}"
     "const { data } = apiResponse;"
-    "return Functions.encodeString(data.name);";
+    "return Functions.encodeString(data.result+data.job_id);";
 
   //Callback gas limit
   uint32 gasLimit = 300000;
@@ -92,7 +98,23 @@ contract InsuranceData is FunctionsClient, ConfirmedOwner {
 
   // State variable to store the returned character information
   string public character;
+  /// @dev This allows us to use our hashToField function on bytes
+  using ByteHasher for bytes;
 
+  /// @notice Thrown when attempting to reuse a nullifier
+  error InvalidNullifier();
+
+  /// @dev The address of the World ID Router contract that will be used for verifying proofs
+  IWorldID internal immutable worldId;
+
+  /// @dev The keccak256 hash of the externalNullifier (unique identifier of the action performed), combination of appId and action
+  uint256 internal immutable externalNullifierHash;
+
+  /// @dev The World ID group ID (1 for Orb-verified)
+  uint256 internal immutable groupId;
+
+  /// @dev Whether a nullifier hash has been used already. Used to guarantee an action is only performed once by a single person
+  mapping(uint256 => bool) internal nullifierHashes;
   /********************************************************************************************/
   /*                                       EVENT DEFINITIONS                                  */
   /********************************************************************************************/
@@ -101,9 +123,17 @@ contract InsuranceData is FunctionsClient, ConfirmedOwner {
    * @dev Constructor
    *      initialize global variable for insurance ids
    */
-  constructor() FunctionsClient(router) ConfirmedOwner(msg.sender) {
+
+  constructor(
+    IWorldID _worldId,
+    string memory _appId,
+    string memory _action
+  ) FunctionsClient(router) ConfirmedOwner(msg.sender) {
     contractOwner = msg.sender;
     insuranceId = 0;
+    worldId = _worldId;
+    groupId = 1;
+    externalNullifierHash = abi.encodePacked(abi.encodePacked(_appId).hashToField(), _action).hashToField();
   }
 
   /**
@@ -157,6 +187,8 @@ contract InsuranceData is FunctionsClient, ConfirmedOwner {
     uint256 _start,
     uint256 _end,
     TypeOfInsurance _typeOfIns,
+    string calldata _lat,
+    string calldata _lon,
     string calldata _description,
     uint256 _riskNumerator,
     uint256 _riskDenominator
@@ -167,6 +199,8 @@ contract InsuranceData is FunctionsClient, ConfirmedOwner {
       start: _start,
       end: _end,
       provider: msg.sender,
+      lat: _lat,
+      lon: _lon,
       typeOfIns: _typeOfIns,
       name: _insuranceName,
       description: _description,
@@ -224,11 +258,22 @@ contract InsuranceData is FunctionsClient, ConfirmedOwner {
    *
    */
 
-  function buy(uint256 insuranceid) external payable {
+  function buy(uint256 insuranceid, uint256 nullifierHash, uint256[8] calldata proof) external payable {
+    if (nullifierHashes[nullifierHash]) revert InvalidNullifier();
+    worldId.verifyProof(
+      1,
+      groupId, // set to "1" in the constructor
+      abi.encodePacked(msg.sender).hashToField(),
+      nullifierHash,
+      externalNullifierHash,
+      proof
+    );
+    nullifierHashes[nullifierHash] = true;
     require(!clientinsured[msg.sender][insuranceid], "The client has already taken this type of insurance");
     require(msg.value > 0, "The client should send ETH to buy insurance");
     uint256 temppayout = msg.value * insurances[insuranceid].riskDenominator;
     require(temppayout < insuranceliquidity[insuranceid], "You should buy with less ETH");
+    require(insuranceliquidity[insuranceid]>0, "Liquidity does not exist for this insurance");
     claimablePayout[msg.sender][insuranceid] = temppayout;
     clientinsured[msg.sender][insuranceid] = true;
     insuranceProviderInsurees[insuranceid].push(msg.sender);
@@ -259,12 +304,41 @@ contract InsuranceData is FunctionsClient, ConfirmedOwner {
    *  @dev Claim insurance
    *
    */
-  function claimInsurancePayout(
-    uint256 insuranceid,
-    string calldata lat,
-    string calldata lon
-  ) external returns (bool) {}
+  function claimInsurancePayout(uint256 insuranceid) external returns (bytes32) {
+    Insurance memory instance = insurances[insuranceid];
+    require(clientinsured[msg.sender][insuranceid], "Client does not have insurance");
+    string[] memory args = new string[](6);
+    args[0] = Strings.toString(insuranceid);
+    args[1] = Strings.toString(uint256(instance.typeOfIns));
+    args[2] = instance.lat;
+    args[3] = instance.lon;
+    args[4] = Strings.toString(instance.start);
+    args[5] = Strings.toString(instance.end);
+    FunctionsRequest.Request memory req;
+    req.initializeRequestForInlineJavaScript(source); // Initialize the request with JS code
+    if (args.length > 0) req.setArgs(args); // Set the arguments for the request
 
+    // Send the request and store the request ID
+    s_lastRequestId = _sendRequest(req.encodeCBOR(), uint64(3217), gasLimit, donID);
+
+    return s_lastRequestId;
+  }
+  /**
+   * @notice Sends an HTTP request for character information
+   * @param subscriptionId The ID for the Chainlink subscription
+   * @param args The arguments to pass to the HTTP request
+   * @return requestId The ID of the request
+   */
+  function sendRequest(uint64 subscriptionId, string[] calldata args) internal returns (bytes32 requestId) {
+    
+  }
+
+  /**
+   * @notice Callback function for fulfilling a request
+   * @param requestId The ID of the request to fulfill
+   * @param response The HTTP response data
+   * @param err Any errors from the Functions request
+   */
   function fulfillRequest(bytes32 requestId, bytes memory response, bytes memory err) internal override {
     if (s_lastRequestId != requestId) {
       revert UnexpectedRequestID(requestId); // Check if request IDs match
