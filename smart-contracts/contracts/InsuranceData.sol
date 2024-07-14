@@ -352,6 +352,34 @@ contract InsuranceData is FunctionsClient, ConfirmedOwner {
     }
     // Update the contract's state variables with the response and any errors
     s_lastResponse = response;
+    bytes memory _result;
+    bytes memory _jobid;
+    bytes memory _insuranceidBytes;
+    uint256 _insuranceid;
+
+    assembly {
+      // Load the first byte
+      _result := mload(add(response, 1))
+
+      // Load the next 32 bytes (offset by 1)
+      _jobid := mload(add(response, 0x21)) // 0x20 (32 bytes) + 1 (first byte)
+
+      // Load the next 32 bytes (offset by 33)
+      _insuranceidBytes := mload(add(response, 0x41)) // 0x20 (32 bytes) + 0x20 (32 bytes) + 1 (first byte)
+    }
+    _insuranceid = bytesToUint(_insuranceidBytes);
+    bool res = keccak256(abi.encodePacked(string(_result))) == keccak256(abi.encodePacked("1"));
+    resultsperclaim[_insuranceid].push(ValidatorResult({ jobid: string(_jobid), result: res }));
+    if (resultsperclaim[_insuranceid].length == requestsperclaim[_insuranceid].length) {
+      uint majority = validators.length / 2 + 1;
+      uint metCriteriaCount = 0;
+      for (uint256 i = 0; i < resultsperclaim[_insuranceid].length; i++) {
+        if (resultsperclaim[_insuranceid][i].result) metCriteriaCount++;
+      }
+      if (metCriteriaCount >= majority) {
+        payout(_insuranceid);
+      }
+    }
     s_lastError = err;
 
     // Emit an event to log the response
