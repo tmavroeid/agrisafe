@@ -1,0 +1,8 @@
+name: backend-server
+services:
+- environment_slug: python
+  github:
+    branch: main
+    deploy_on_push: true
+    repo: tmavroeid/ethbrussels
+  name: backend-server
