@@ -19,6 +19,7 @@ contract InsuranceData is FunctionsClient, ConfirmedOwner {
   bytes public s_lastError;
 
   address private contractOwner; // Account used to deploy contract
+  mapping(address => uint256[]) public clientInsurances;
   mapping(address => bool) private registeredInsuranceProvider;
   address[] public providers;
   address[] public alreadyFundedInsuranceProviders;
@@ -287,6 +288,7 @@ contract InsuranceData is FunctionsClient, ConfirmedOwner {
     insuranceProviderInsurees[insuranceid].push(msg.sender);
     insuranceidtoinsuree[insuranceid] = msg.sender;
     insuredamount[msg.sender][insuranceid] = msg.value;
+    clientInsurances[msg.sender].push(insuranceid);
     for (uint256 i = 0; i < insurancelps[insuranceid].length; i++) {
       uint256 insTotalLp = insuranceliquidity[insuranceid];
       uint256 currLp = liquidityperlp[insuranceid][insurancelps[insuranceid][i]] * 10**18;
@@ -296,6 +298,10 @@ contract InsuranceData is FunctionsClient, ConfirmedOwner {
     }
     emit InsuranceBought(msg.sender, insuranceid);
     insuredpayout[insuranceid][msg.sender] = 0;
+  }
+
+  function getInsurancesFotClient(address client) external view returns (uint256[] memory) {
+    return clientInsurances[client];
   }
 
   /**

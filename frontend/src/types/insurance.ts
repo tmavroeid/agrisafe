@@ -4,6 +4,8 @@ export type Insurance = {
   start: string;
   end: string;
   type: string;
+  lat?: string;
+  lon?: string;
   id: string;
   riskNumerator: string;
   riskDenominator: string;
