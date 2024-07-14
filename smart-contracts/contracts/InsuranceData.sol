@@ -7,6 +7,7 @@ import { FunctionsRequest } from "@chainlink/contracts/src/v0.8/functions/v1_0_0
 import { ByteHasher } from "./helpers/ByteHasher.sol";
 import { IWorldID } from "./interfaces/IWorldID.sol";
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
+import "hardhat/console.sol";
 
 contract InsuranceData is FunctionsClient, ConfirmedOwner {
   /********************************************************************************************/
@@ -237,9 +238,10 @@ contract InsuranceData is FunctionsClient, ConfirmedOwner {
    */
   function fundInsurance(uint256 insuranceid) public payable returns (uint) {
     require(
-      hasProvidedLiquidity[insuranceid][msg.sender],
+      !hasProvidedLiquidity[insuranceid][msg.sender],
       "The liquidity provider has already provisioned liquidity for this insurance"
     );
+    hasProvidedLiquidity[insuranceid][msg.sender] = true;
     numliquidityproviders[insuranceid]++;
     insuranceliquidity[insuranceid] = insuranceliquidity[insuranceid] + msg.value;
     insurancelps[insuranceid].push(msg.sender);
@@ -258,29 +260,22 @@ contract InsuranceData is FunctionsClient, ConfirmedOwner {
    *
    */
 
-  function buy(uint256 insuranceid, uint256 root uint256 nullifierHash, uint256[8] calldata proof) external payable {
-    if (nullifierHashes[nullifierHash]) revert InvalidNullifier();
-    worldId.verifyProof(
-      root,
-      groupId, // set to "1" in the constructor
-      abi.encodePacked(msg.sender).hashToField(),
-      nullifierHash,
-      externalNullifierHash,
-      proof
-    );
-    nullifierHashes[nullifierHash] = true;
+  function buy(uint256 insuranceid) external payable {
     require(!clientinsured[msg.sender][insuranceid], "The client has already taken this type of insurance");
     require(msg.value > 0, "The client should send ETH to buy insurance");
     uint256 temppayout = msg.value * insurances[insuranceid].riskDenominator;
-    require(temppayout < insuranceliquidity[insuranceid], "You should buy with less ETH");
+    require(temppayout <= insuranceliquidity[insuranceid], "You should buy with less ETH");
     require(insuranceliquidity[insuranceid]>0, "Liquidity does not exist for this insurance");
     claimablePayout[msg.sender][insuranceid] = temppayout;
     clientinsured[msg.sender][insuranceid] = true;
     insuranceProviderInsurees[insuranceid].push(msg.sender);
     insuredamount[msg.sender][insuranceid] = msg.value;
     for (uint256 i = 0; i < insurancelps[insuranceid].length; i++) {
-      uint lpperc = (liquidityperlp[insuranceid][insurancelps[insuranceid][i]] / insuranceliquidity[insuranceId]) * 100;
-      uint lpamount = lpperc * msg.value;
+      uint256 insTotalLp = insuranceliquidity[insuranceid];
+      uint256 currLp = liquidityperlp[insuranceid][insurancelps[insuranceid][i]] * 10**18;
+
+      uint lpperc = ((currLp / insTotalLp) * 100);
+      uint lpamount = (lpperc * msg.value / 100) / 10**18;
       payable(insurancelps[insuranceid][i]).transfer(lpamount);
     }
     emit InsuranceBought(msg.sender, insuranceid);
