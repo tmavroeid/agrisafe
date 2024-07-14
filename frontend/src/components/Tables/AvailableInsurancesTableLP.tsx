@@ -3,12 +3,6 @@ import { Insurance } from "@/types/insurance";
 
 import LinkButton from "@/components/Button/linkButton"
 
-const typeIdToName = {
-  0: "Rain",
-  1: "Heat",
-  2: "Extreme weather",
-};
-
 const Table = (props: any) => {
   const {
     data = []
@@ -31,12 +25,6 @@ const Table = (props: any) => {
         </div>
         <div className="col-span-1 flex items-center">
           <p className="font-medium">To</p>
-        </div>
-        <div className="col-span-1 flex items-center">
-          <p className="font-medium">Type</p>
-        </div>
-        <div className="col-span-1 flex items-center">
-          <p className="font-medium">Location</p>
         </div>
         <div className="col-span-1 flex items-center">
           <p className="font-medium">Payout ratio</p>
@@ -72,17 +60,6 @@ const Table = (props: any) => {
           </div>
           <div className="col-span-1 flex items-center">
             <p className="text-sm text-black dark:text-white">
-              {/* @ts-ignore */}
-              {typeIdToName[insurance.type]}    
-            </p>
-          </div>
-          <div className="col-span-1 flex items-center">
-            <p className="text-sm text-black dark:text-white">
-              {insurance.lat}, {insurance.lon}
-            </p>
-          </div>
-          <div className="col-span-1 flex items-center">
-            <p className="text-sm text-black dark:text-white">
               {insurance.riskNumerator}/{insurance.riskDenominator}
             </p>
           </div>
@@ -92,7 +69,7 @@ const Table = (props: any) => {
             </p>
           </div>
           <div className="col-span-1 flex items-center">
-            <LinkButton title="Purchase" target={`/user/insurances/${insurance.id}/purchase`}/>
+            <LinkButton title="Fund" target={`/lp/insurances/${insurance.id}/fund`}/>
           </div>
         </div>
       ))}

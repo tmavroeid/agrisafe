@@ -1,11 +1,11 @@
 "use client";
 import { useEffect, useState } from "react";
-import AvailableInsurances from "@/components/Tables/AvailableInsurancesTable";
+import AvailableInsurancesTableLP from "@/components/Tables/AvailableInsurancesTableLP";
 import DefaultLayout from "@/components/Layouts/DefaultLayout";
 import Breadcrumb from "@/components/Breadcrumbs/Breadcrumb";
 import { useReadContract, useReadContracts } from 'wagmi'
 import { formatEther } from 'viem'
-import { address, abi } from '../../../../abis/InsuranceData.json';
+import { address, abi } from '../../../../../abis/InsuranceData.json';
 import { Insurance } from "@/types/insurance";
 
 export default function Browse() {
@@ -86,8 +86,6 @@ export default function Browse() {
         end: end.toDateString(),
         type: insurance.result[3],
         provider: insurance.result[4],
-        lat: insurance.result[5],
-        lon: insurance.result[6],
         name: insurance.result[7],
         description: insurance.result[8],
         riskNumerator: insurance.result[9].toString(),
@@ -107,7 +105,7 @@ export default function Browse() {
       <Breadcrumb pageName="Browse" />
 
       <div className="flex flex-col gap-10">
-        <AvailableInsurances data={insurancesParsed}/>
+        <AvailableInsurancesTableLP data={insurancesParsed}/>
       </div>
     </DefaultLayout>
   )
