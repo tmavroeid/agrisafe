@@ -15,7 +15,7 @@ import { cookieStorage, createStorage, State, WagmiProvider, cookieToInitialStat
 import { headers } from 'next/headers'
 
 // Get projectId from https://cloud.walletconnect.com
-export const projectId = process.env.NEXT_PUBLIC_PROJECT_ID
+const projectId = process.env.NEXT_PUBLIC_PROJECT_ID
 
 if (!projectId) throw new Error('Project ID is not defined')
 
@@ -28,7 +28,7 @@ const metadata = {
 
 // Create wagmiConfig
 const chains = [mainnet, sepolia] as const
-export const config = defaultWagmiConfig({
+const config = defaultWagmiConfig({
   chains,
   projectId,
   metadata,
