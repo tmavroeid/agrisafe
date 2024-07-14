@@ -172,8 +172,17 @@ contract InsuranceData is FunctionsClient, ConfirmedOwner {
   function isInsuranceProviderRegistered(address registeredInsuranceProviderAddress) public view returns (bool) {
     return registeredInsuranceProvider[registeredInsuranceProviderAddress];
   }
+
   function numOfInsuranceProviders() public view returns (uint count) {
     return providers.length;
+  }
+
+  function bytesToUint(bytes memory b) public pure returns (uint256) {
+    uint256 number;
+    for (uint i = 0; i < b.length; i++) {
+      number = number + uint8(b[i]);
+    }
+    return number;
   }
   /**
    * @dev Add an insurance to the registration queue
