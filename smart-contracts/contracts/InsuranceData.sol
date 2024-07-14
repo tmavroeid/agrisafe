@@ -49,7 +49,6 @@ contract InsuranceData is FunctionsClient, ConfirmedOwner {
     string url;
   }
   struct ValidatorResult {
-    address validator;
     string jobid;
     bool result;
   }
