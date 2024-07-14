@@ -31,7 +31,7 @@ const defaultData: UserInsurance[] = [
   }
 ];
 
-const UserInsurancesTable = props => {
+const UserInsurancesTable = (props: any) => {
   const {
     productData = defaultData
   } = props;
