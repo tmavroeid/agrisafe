@@ -12,7 +12,7 @@ REQUESTER_HOST = os.environ["BACALHAU_API_HOST"]
 REQUESTER_API_PORT = os.environ['REQUESTER_API_PORT']
 REQUESTER_BASE_URL = f"http://{REQUESTER_HOST}:{REQUESTER_API_PORT}"
 
-def create_job(name, insurance_id, insurance_type, task_id, cids):
+def create_job(name, insurance_id, insurance_type, task_id, lat, lon):
     job = Template('''
     {
       "Job": {
@@ -22,22 +22,33 @@ def create_job(name, insurance_id, insurance_type, task_id, cids):
         "Labels": {
           "insurance": "${insurance_id}",
           "type": "${insurance_type}"
-        },
+         },
         "Tasks": [
           {
             "Name": "${task_id}",
             "Engine": {
               "Type": "docker",
               "Params": {
-                "Image": "ubuntu:latest",
+                "Image": "ghcr.io/tmavroeid/validator:1.0.0",
                 "Entrypoint": [
-                  "ls",
-                  "/data"
+                  "python",
+                  "main.py",
+                  "-lat",
+                  "${lat}",
+                  "-lon",
+                  "${lon}",
+                  "-f",
+                  "/data/data.parquet",
+                  "-t",
+                  "${insurance_type}"
                 ]
               }
             },
             "Publisher": {
               "Type": "noop"
+            },
+            "Resources": {
+                "Memory": "3Gb"
             },
             "InputSources": [
               {
@@ -56,7 +67,7 @@ def create_job(name, insurance_id, insurance_type, task_id, cids):
     }
     ''').substitute(
         name=name, insurance_id=insurance_id, insurance_type=insurance_type, 
-        task_id=task_id, cid=cids[0])
+        task_id=task_id, lat=lat, lon=lon)
     print(job)
 
     createJobResp = requests.put(f"{REQUESTER_BASE_URL}/api/v1/orchestrator/jobs", json=json.loads(job))

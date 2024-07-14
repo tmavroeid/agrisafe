@@ -18,10 +18,17 @@ app = FastAPI()
 
 @app.put("/insurance/{insurance_id}")
 def trigger(insurance_id: int, type: ModelType, lat: float, lon: float, after: int, before: int):
-    response = requests.get('https://basin.tableland.xyz/vaults/wxm.weather_data_dev/events', 
-                            params={'limit': 50, 'after': to_seconds(after), 'before': to_seconds(before)}).json()
-    cids = [r['cid'] for r in response]
-    job_id = create_job(f'test-job-{datetime.now()}', insurance_id, type, f'{insurance_id}-{type}', cids)
+    # response = requests.get('https://basin.tableland.xyz/vaults/wxm.weather_data_dev/events', 
+                            # params={'limit': 50, 'after': to_seconds(after), 'before': to_seconds(before)}).json()
+    # cids = [r['cid'] for r in response]
+    tp = 'rain'
+    if type == ModelType.rain:
+        tp = 'rain'
+    elif type == ModelType.heat:
+        tp = 'heat'
+    else:
+        tp = 'extreme'
+    job_id = create_job(f'test-job-{datetime.now()}', insurance_id, tp, f'{insurance_id}-{type}', lat, lon)
     cache[insurance_id] = job_id
     return {"job_id": job_id}
 
