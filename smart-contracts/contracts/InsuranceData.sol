@@ -60,6 +60,7 @@ contract InsuranceData is FunctionsClient, ConfirmedOwner {
   mapping(uint256 => mapping(address => uint)) insuredpayout;
   mapping(uint256 => bytes32[]) requestsperclaim;
   mapping(uint256 => ValidatorResult[]) resultsperclaim;
+  mapping(uint256 => address) insuranceidtoinsuree;
   uint256 public insuranceId;
   Validator[] private validators;
   uint256[] public insuranceIds;
@@ -93,13 +94,13 @@ contract InsuranceData is FunctionsClient, ConfirmedOwner {
     "const beforeTs = args[5];"
     "const validatorURL = args[6];"
     "const apiResponse = await Functions.makeHttpRequest({"
-    "url: `${validatorURL}/insurance/${insuranceId}?type=${insuranceType}&lat=${lat}&lon=${lon}&after=${afterTs}&before=${beforeTs}`"
+    "url: `${validatorURL}/insurance?insuranceid=${insuranceId}&type=${insuranceType}&lat=${lat}&lon=${lon}&after=${afterTs}&before=${beforeTs}`"
     "});"
     "if (apiResponse.error) {"
     "throw Error('Request failed');"
     "}"
     "const { data } = apiResponse;"
-    "return Functions.encodeString(data.result+data.job_id+data.address+data.insurance_id);";
+    "return Functions.encodeString(data.result+data.job_id+data.insurance_id);";
 
   //Callback gas limit
   uint32 gasLimit = 300000;
