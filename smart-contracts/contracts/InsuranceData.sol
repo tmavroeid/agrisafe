@@ -274,17 +274,7 @@ contract InsuranceData is FunctionsClient, ConfirmedOwner {
    *
    */
 
-  function buy(uint256 insuranceid, uint256 root, uint256 nullifierHash, uint256[8] calldata proof) external payable {
-    if (nullifierHashes[nullifierHash]) revert InvalidNullifier();
-    worldId.verifyProof(
-      root,
-      groupId, // set to "1" in the constructor
-      abi.encodePacked(msg.sender).hashToField(),
-      nullifierHash,
-      externalNullifierHash,
-      proof
-    );
-    nullifierHashes[nullifierHash] = true;
+  function buy(uint256 insuranceid) external payable {
     require(!clientinsured[msg.sender][insuranceid], "The client has already taken this type of insurance");
     require(msg.value > 0, "The client should send ETH to buy insurance");
     uint256 temppayout = msg.value * insurances[insuranceid].riskDenominator;
@@ -293,9 +283,10 @@ contract InsuranceData is FunctionsClient, ConfirmedOwner {
     claimablePayout[msg.sender][insuranceid] = temppayout;
     clientinsured[msg.sender][insuranceid] = true;
     insuranceProviderInsurees[insuranceid].push(msg.sender);
+    insuranceidtoinsuree[insuranceid] = msg.sender;
     insuredamount[msg.sender][insuranceid] = msg.value;
     for (uint256 i = 0; i < insurancelps[insuranceid].length; i++) {
-      uint lpperc = (liquidityperlp[insuranceid][insurancelps[insuranceid][i]] / insuranceliquidity[insuranceId]) * 100;
+      uint lpperc = (liquidityperlp[insuranceid][insurancelps[insuranceid][i]] / insuranceliquidity[insuranceid]) * 100;
       uint lpamount = lpperc * msg.value;
       payable(insurancelps[insuranceid][i]).transfer(lpamount);
     }
@@ -307,8 +298,9 @@ contract InsuranceData is FunctionsClient, ConfirmedOwner {
    *  @dev Transfers eligible payout funds to insuree
    *
    */
-  function payout(uint256 insuranceid, address insuree) external returns (uint) {
-    require(insuredpayout[insuranceid][insuree] == 0, "The client has already claimed payout");
+  function payout(uint256 insuranceid) internal returns (uint) {
+    require(insuredpayout[insuranceid][msg.sender] == 0, "The client has already claimed payout");
+    address insuree = insuranceidtoinsuree[insuranceid];
     uint insureepayout = claimablePayout[insuree][insuranceid];
     payable(insuree).transfer(insureepayout);
     insuredpayout[insuranceid][insuree] = insureepayout;
