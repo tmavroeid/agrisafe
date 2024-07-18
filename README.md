@@ -2,10 +2,12 @@
 
 AgriSafe is a web3 agricultural insurance protocol aiming to help farmers benefit from transparency and verifiability of the blokchain.
 
-<hr align="center">
-  <img width="400" height="400" src="https://raw.githubusercontent.com/tmavroeid/agrisafe/main/img/logo.png" alt="agrisafe logo">
-  <br/>
-</hr>
+<div align="center">
+  <hr align="center">
+    <img width="400" height="400" src="https://raw.githubusercontent.com/tmavroeid/agrisafe/main/img/logo.png" alt="agrisafe logo">
+    <br/>
+  </hr>
+</div>
 
 AgriSafe is an insurance protocol that is aiming to become the new standard in weather insurance. Focusing on solving the main problems of the traditional weather insurance we are utilising transparent and verifiable computation along with open source weather data to create a more fair and beneficial insurance market. The 4 main entities involved into the protocol are:
 1) The Insurance provider that is responsible for creating parametric insurances and making them available for purchase. Is responsible for the risk assessment and initial funding of these new  insurances. This will usually be and insurance company that has the know-how in order to assess the risk for a certain insurance.
