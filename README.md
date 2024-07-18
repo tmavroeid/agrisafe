@@ -2,7 +2,7 @@
 
 AgriSafe is a web3 agricultural insurance protocol aiming to help farmers benefit from transparency and verifiability of the blokchain.
 
-<h1 align="center">
+<hr align="center">
   <img width="400" height="400" src="img/logo.png" alt="agrisafe logo">
   <br/>
 </hr>
